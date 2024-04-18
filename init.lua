@@ -770,6 +770,7 @@ require('lazy').setup({
       --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
     end,
   },
+  { 'nvim-tree/nvim-web-devicons' },
   {
     'folke/trouble.nvim',
     dependencies = {
