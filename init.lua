@@ -83,7 +83,14 @@ end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
 require('lazy').setup({
-  'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  {
+    'tpope/vim-sleuth',
+    config = function()
+      vim.opt.expandtab = true
+      vim.opt.tabstop = 4
+      vim.opt.shiftwidth = 4
+    end,
+  }, -- Detect tabstop and shiftwidth automatically
 
   -- "gc" to comment visual regions/lines
   { 'numToStr/Comment.nvim', opts = {} },
@@ -367,6 +374,15 @@ require('lazy').setup({
           --  For example, in C this would take you to the header.
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
+          map('<leader>f', function()
+            vim.lsp.buf.format()
+            vim.lsp.buf.code_action { context = { only = { 'source.organizeImports' } }, apply = true }
+          end, '[F]ormat current buffer with LSP')
+
+          vim.api.nvim_buf_create_user_command(event.buf, 'Format', function()
+            vim.lsp.buf.format()
+          end, { desc = 'Format current buffer with LSP' })
+
           -- The following two autocommands are used to highlight references of the
           -- word under your cursor when your cursor rests there for a little while.
           --    See `:help CursorHold` for information about when this is executed
@@ -477,36 +493,16 @@ require('lazy').setup({
   { -- Autoformat
     'stevearc/conform.nvim',
     lazy = false,
-    keys = {
-      {
-        '<leader>f',
-        function()
-          require('conform').format { async = true, lsp_fallback = true }
-        end,
-        mode = '',
-        desc = '[F]ormat buffer',
-      },
-    },
     opts = {
       notify_on_error = false,
-      format_on_save = function(bufnr)
-        -- Disable "format_on_save lsp_fallback" for languages that don't
-        -- have a well standardized coding style. You can add additional
-        -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
-        return {
-          timeout_ms = 500,
-          lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
-        }
-      end,
+      format_on_save = {
+        timeout_ms = 500,
+        lsp_fallback = true,
+      },
       formatters_by_ft = {
         lua = { 'stylua' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use a sub-list to tell conform to run *until* a formatter
-        -- is found.
-        javascript = { { 'prettierd', 'prettier' } },
+        javascript = { { 'prettierd', 'prettier' }, { 'eslintd', 'eslint' } },
+        go = { 'goimports', 'gofmt' },
       },
     },
   },
@@ -834,6 +830,26 @@ require('lazy').setup({
     end,
   },
 
+  -- {
+  --   'zbirenbaum/copilot.lua',
+  --   config = function()
+  --     require('copilot').setup {}
+  --   end,
+  -- },
+  --
+
+  {
+    'github/copilot.vim',
+    config = function()
+      vim.g.copilot_assume_mapped = true
+      vim.keymap.del('i', '<Tab>')
+      vim.g.copilot_no_tab_map = true
+      vim.g.copilot_filetypes = { xml = false, markdown = false }
+      vim.cmd [[highligh CopilotSuggestion guifg=#555555 ctermfg=8 ]]
+      vim.keymap.set('i', '<M-l>', 'copilot#Accept("\\<CR>")', { expr = true, replace_keycodes = false })
+    end,
+  },
+
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
@@ -848,7 +864,7 @@ require('lazy').setup({
   -- require 'kickstart.plugins.lint',
   require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
